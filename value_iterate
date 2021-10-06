@@ -1,0 +1,73 @@
+import gym
+import random
+import time
+
+env=gym.make('GridWorld-v0')
+
+class Learn:
+    def __init__(self,grid_mdp):
+        #初始化状态值函数
+        self.v=dict()
+        for state in grid_mdp.states:
+            self.v[state]=0
+        #初始化策略，这些策略均在状态转移概率矩阵中
+        self.pi=dict()
+        #random.choice(seq):返回列表、元组、字符串的随机项
+        self.pi[1]=random.choice(['e','s'])
+        self.pi[2]=random.choice(['e','w'])
+        self.pi[3]=random.choice(['w','s','e'])
+        self.pi[4]=random.choice(['e','w'])
+        self.pi[5]=random.choice(['w','s'])
+#价值迭代函数
+    def value_iterate(self,grid_mdp):
+        for i in range(1000):
+            delta = 0.0
+            for state in grid_mdp.states:
+                if state in grid_mdp.terminate_states:continue
+                a1 = grid_mdp.actions[0]
+                t,s,r = grid_mdp.transform(state,a1)
+                if s!= -1:
+                    v1 = r + grid_mdp.gamma*self.v[state]
+
+                    for action in grid_mdp.actions:
+                        t,s,r = grid_mdp.transform(state,action)
+                        if s!= -1:
+                            if v1< r + grid_mdp.gamma*self.v[state]:
+                                a1 = action
+                                v1 = r + grid_mdp.gamma*self.v[state]
+                    delta = abs(v1 - self.v[state])
+                    self.pi[state] = a1
+                    self.v[state] = v1
+            if delta< 1e-6:
+                break
+
+#最优动作
+    def action(self,state):
+        return self.pi[state]
+
+
+gm=env.env
+#初始化智能体的状态
+state=env.reset()
+#实例化对象，获得初始化状态值函数和初始化策略
+learn=Learn(gm)
+#价值迭代
+learn.value_iterate(gm)
+total_reward=0
+#最多走100步到达终止状态
+for i in range(100):
+    env.render()
+    #每个状态的策略都是最优策略
+    action=learn.action(state)
+    #每一步按照最优策略走
+    state,reward,done,_=env.step(action)
+    total_reward+=reward
+    time.sleep(0.5)
+    if done:
+        #显示环境中物体进入终止状态的图像
+        env.render()
+        break
+
+
+
+
